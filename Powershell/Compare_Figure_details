@@ -1,0 +1,68 @@
+#Extract the figure information
+function Get-RtfPictHex {
+    param (
+        [string]$Path
+    )
+
+    $content = Get-Content -Path $Path -Raw
+    $pattern = '{\\pict[\s\S]*?}'  # non-greedy pict block
+    $matches = [regex]::Matches($content, $pattern)
+
+    #Keep only the hex data
+    $hexList = @()
+    foreach ($match in $matches) {
+        $hex = ($match.Value -replace '[^\da-fA-F]', '').ToLower()
+        $hexList += $hex
+    }
+    return $hexList
+}
+
+function Compare-RtfImages {
+    param (
+        [string]$oldfile,
+        [string]$newfile
+    )
+
+    #Extract the picture portion from the RTF.
+    $hex1 = Get-RtfPictHex -Path $oldfile
+    $hex2 = Get-RtfPictHex -Path $newfile
+
+    #Get the maximum lengths between the two.
+    $max = [Math]::Max($hex1.Length, $hex2.Length)
+
+    $diffcnt= 0
+    for ($i = 0; $i -lt $max; $i++) {
+        $block1 = if ($i -lt $hex1.Length) { $hex1[$i] } else { $null }
+        $block2 = if ($i -lt $hex2.Length) { $hex2[$i] } else { $null }
+
+        if ($block1 -and $block2) {
+            if ($block1 -eq $block2) {
+            } else {
+              $diffcnt = $diffcnt + 1
+            }
+        }
+    }
+
+    #Extract and pad the file information and folder information
+    $oldfname = Split-Path -Path $oldfile -Leaf
+    $newfname = Split-Path -Path $newfile -Leaf
+    $oldfname = $oldfname.Padright(30)
+    $newfname = $newfname.Padright(30)
+
+    $oldpath  = Split-Path -Path $oldfile -Parent
+    $newpath  = Split-Path -Path $newfile -Parent
+
+    #Derive the similarities
+    $similarity = [Math]::Round($diffcnt/$i * 100,2)
+    if ($similarity -ne 0 ) {
+      Write-Host "$($oldfile) vs $($newfile) : `n($similarity % difference). Re-check the figure."
+    } else {
+      Write-Host "$($oldfile) vs $($newfile) : `n($similarity % difference)."
+    }
+}
+
+clear
+# Example usage:
+Compare-RtfImages -oldfile "C:\Temp\figures\figure1\fig-simple.rtf" -newfile "C:\Temp\figures\figure2\fig-simple.rtf"
+Compare-RtfImages -oldfile "C:\Temp\figures\figure1\fig-simple2.rtf" -newfile "C:\Temp\figures\figure2\fig-simple2.rtf"
+Compare-RtfImages -oldfile "C:\Temp\figures\figure1\fig-simple3.rtf" -newfile "C:\Temp\figures\figure2\fig-simple3.rtf"
