@@ -10,7 +10,7 @@ clear
 $dir = ""
 
 #Retrieve all the files in a directory and display in a list
-$histFile = "C:\Users\henti\OneDrive\Programming\Powershell\hist.txt"
+$histFile = "C:\Users\userid\OneDrive\Programming\Powershell\hist.txt"
 $maxln = 120
 $line = "-"*($maxln-2)
 $blline = " "*($maxln-2)
